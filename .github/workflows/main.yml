@@ -1,0 +1,48 @@
+name: Build JavaFX Project
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        java: [ '21.0.2' ]
+      fail-fast: false
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Set Up Java DK Env
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+
+      - name: Define PATH & Check JDK Installation
+        run: echo $JAVA_HOME
+
+      - name: Check Gradle Wrapper
+        uses: gradle/wrapper-validation-action@v1
+
+      - name: Grant execute permission for Gradle
+        if: runner.os == 'Linux' || runner.os == 'macOS'
+        run: chmod +x gradlew
+
+      - name: Execute Build
+        run: ./gradlew --info --stacktrace build
+        shell: bash
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: javafx-build-${{ runner.os }}
+          path: build/libs/*.jar
